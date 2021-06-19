@@ -18,6 +18,9 @@ connection.connect((err) => {
 });
 
 const runSearch = () => {
+    console.log("");
+    console.log("-------");
+    console.log("");
     inquirer
         .prompt({
             name: 'action',
@@ -44,6 +47,8 @@ const runSearch = () => {
                 viewDepartments();
             } else if (answers.action == 'View roles') {
                 viewRoles();
+            } else if (answers.action == 'View employees') {
+                viewEmployees();
             } else if (answers.action == 'Update employee roles') {
                 updateEmployeeRoles();
             } else {
@@ -215,7 +220,8 @@ const viewDepartments = () => {
         if (err) throw err;
         results.forEach((row) => {
             console.log(`Department ID: ${row.id} - Name: ${row.dept_name}`)
-        })
+        });
+        runSearch();
     })
 }
 const viewRoles = () => {
@@ -223,12 +229,25 @@ const viewRoles = () => {
         if (err) throw err;
         results.forEach((row) => {
             console.log(`Title: ${row.title}, Salary: ${row.salary}, Department: ${row.dept_name}`)
-        })
+        });
+        runSearch();
+    })
+}
+const viewEmployees = () => {
+    connection.query('SELECT e.first_name, e.last_name, r.title, r.salary, m.first_name as manager_fname, m.last_name as manager_lname FROM employee e LEFT JOIN roles r ON r.id=e.role_id LEFT JOIN employee m ON e.manager_id = m.id', (err, results) => {
+        if (err) throw err;
+        results.forEach((row) => {
+            let manager_name = "No manager"
+            if (row.manager_fname !== null && row.manager_lname !== null) {
+                manager_name = `${row.manager_fname} ${row.manager_lname}`
+            }
+            console.log(`Employee: ${row.first_name} ${row.last_name}, Title: ${row.title}, Salary: ${row.salary}, Manager: ${manager_name}`)
+        });
+        runSearch();
     })
 }
 const updateEmployeeRoles = () => {
     console.log('Updating employee role...\n');
-    const query = con
     connection.query('UPDATE roles', (err, results) => {
         if (err) throw err;
         results.forEach((row) => {
