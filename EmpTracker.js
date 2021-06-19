@@ -138,59 +138,75 @@ const addRole = () => {
     })
 }
 const addEmployees = () => {
-    connection.query('SELECT * FROM managers', (err, results) => {
+    connection.query('SELECT * FROM employee', (err, employees) => {
         if (err) throw err;
-        inquirer
-        .prompt([
-            {
-                name: 'first_name',
-                type: 'input',
-                message: "What is the first name of the employee?"
-            },
-            {
-                name: 'last_name',
-                type: 'input',
-                message: "What is the last name of the employee?"
-            },
-            {
-                name: 'manager',
-                type: 'rawlist',
-                choices() {
-                    const choiceArray = [];
-                    results.forEach(({manager_id}) => {
-                        choiceArray.push(manager_id);
-                    })
-                    return choiceArray
-                },
-                message: "Who is the manager of the employee?"
-            },
-            {
-                name: 'role',
-                type: 'rawlist',
-                choices() {
-                    const choiceArray = [];
-                    results.forEach(({role_id}) => {
-                        choiceArray.push(role_id);
-                    })
-                },
-                message: "What is the role of the employee?"
-            },
-        ])
-        .then((answers) => {
-            connection.query(
-                'INSERT INTO employee SET ?',
+        connection.query('SELECT * FROM roles', (err, roles) => {
+            if (err) throw err;
+            inquirer
+            .prompt([
                 {
-                    first_name: answers.first_name,
-                    last_name: answers.last_name,
-                    role_id: answers.role,
-                    manager_id: answers.manager_id
+                    name: 'first_name',
+                    type: 'input',
+                    message: "What is the first name of the employee?"
                 },
-                (err) => {
-                  if (err) throw err;
-                  console.log('Employee created successfully');
-                  runSearch();
-                }
-            )
+                {
+                    name: 'last_name',
+                    type: 'input',
+                    message: "What is the last name of the employee?"
+                },
+                {
+                    name: 'manager',
+                    type: 'rawlist',
+                    choices() {
+                        const choiceArray = ['No manager'];
+                        employees.forEach(({first_name, last_name}) => {
+                            choiceArray.push(`${first_name} ${last_name}`);
+                        })
+                        return choiceArray
+                    },
+                    message: "Who is the manager of the employee?"
+                },
+                {
+                    name: 'role',
+                    type: 'rawlist',
+                    choices() {
+                        const choiceArray = [];
+                        roles.forEach(({title}) => {
+                            choiceArray.push(title);
+                        })
+                        return choiceArray;
+                    },
+                    message: "What is the role of the employee?"
+                },
+            ])
+            .then((answers) => {
+                let manager_id;
+                employees.forEach((employee) => {
+                    if (answers.manager === `${employee.first_name} ${employee.last_name}`) {
+                        manager_id = employee.id
+                    }
+                })
+                let role_id;
+                roles.forEach((role) => {
+                    if (answers.role === role.title) {
+                        role_id = role.id
+                    }
+                })
+                connection.query(
+                    'INSERT INTO employee SET ?',
+                    {
+                        first_name: answers.first_name,
+                        last_name: answers.last_name,
+                        role_id: role_id,
+                        manager_id: manager_id
+                    },
+                    (err) => {
+                      if (err) throw err;
+                      console.log('Employee created successfully');
+                      runSearch();
+                    }
+                )
+            })
         })
     })
 }
