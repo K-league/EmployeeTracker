@@ -66,7 +66,7 @@ const addDepartments = () => {
         .prompt([
             {
                 name:'department_name',
-                type: 'choice',
+                type: 'input',
                 message: 'What is the department name?'
             },
         ])
@@ -85,21 +85,48 @@ const addDepartments = () => {
         })
 }
 const addRole = () => {
-    inquirer
+    connection.query("SELECT * FROM department", (err, departments) => {
+        if (err) throw err;
+        inquirer
         .prompt([
             {
-                name:'role_name',
+                name: 'title',
                 type: 'input',
                 message: 'What is the name of the role?',
+
+            },
+            {
+                name: 'salary',
+                type: 'input',
+                message: 'What is the salary for the role?',
+
+            },
+            {
+                name:'department',
+                type: 'rawlist',
+                choices() {
+                    const choiceArray = [];
+                    departments.forEach(({dept_name}) => {
+                        choiceArray.push(dept_name);
+                    });
+                    return choiceArray;
+                },
+                message: 'What is the department?',
             },
         ])
         .then((answers) => {
+            let dept_id;
+            departments.forEach((dept) => {
+                if (answers.department === dept.dept_name) {
+                    dept_id = dept.id
+                }
+            })
             connection.query(
                 'INSERT INTO roles SET ?',
                 {
                     title: answers.title,
                     salary: answers.salary,
-                    department_id: answers.department_id
+                    department_id: dept_id
                 },
                 (err) => {
                   if (err) throw err;
@@ -108,9 +135,12 @@ const addRole = () => {
                 }
             )
         })
+    })
 }
 const addEmployees = () => {
-    inquirer
+    connection.query('SELECT * FROM managers', (err, results) => {
+        if (err) throw err;
+        inquirer
         .prompt([
             {
                 name: 'first_name',
@@ -124,12 +154,25 @@ const addEmployees = () => {
             },
             {
                 name: 'manager',
-                type: 'choice',
+                type: 'rawlist',
+                choices() {
+                    const choiceArray = [];
+                    results.forEach(({manager_id}) => {
+                        choiceArray.push(manager_id);
+                    })
+                    return choiceArray
+                },
                 message: "Who is the manager of the employee?"
             },
             {
                 name: 'role',
-                type: 'choice',
+                type: 'rawlist',
+                choices() {
+                    const choiceArray = [];
+                    results.forEach(({role_id}) => {
+                        choiceArray.push(role_id);
+                    })
+                },
                 message: "What is the role of the employee?"
             },
         ])
@@ -149,6 +192,7 @@ const addEmployees = () => {
                 }
             )
         })
+    })
 }
 const viewDepartments = () => {
     connection.query('SELECT * FROM department', (err, results) => {
@@ -159,10 +203,10 @@ const viewDepartments = () => {
     })
 }
 const viewRoles = () => {
-    connection.query('SELECT * FROM roles', (err, results) => {
+    connection.query('SELECT title, salary, dept_name FROM roles LEFT JOIN department on roles.department_id = department.id', (err, results) => {
         if (err) throw err;
         results.forEach((row) => {
-            console.log(`Role ID: ${row.id} - Name: ${row.role_name}`)
+            console.log(`Title: ${row.title}, Salary: ${row.salary}, Department: ${row.dept_name}`)
         })
     })
 }
